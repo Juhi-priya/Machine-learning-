@@ -1,0 +1,160 @@
+%% Machine Learning Online Class - Exercise 2: Logistic Regression ( Function definitions added just before the Function Call)
+%     sigmoid.m
+%     costFunction.m
+%     predict.m
+%     costFunctionReg.m
+
+clear ; close all; clc
+data = load('ex2data1.txt');
+X = data(:, [1, 2]); y = data(:, 3);
+%% =========================Sigmoid=======================
+function g = sigmoid(z)
+g = zeros(size(z));
+g=1./(1+exp(-z));
+end
+
+%% ==================== Part 1: Plotting ====================
+
+fprintf(['Plotting data with + indicating (y = 1) examples and o ' ...
+         'indicating (y = 0) examples.\n']);
+
+
+function plotData(X, y)
+figure; hold on;
+plot(X(find(y==1),1),X(find(y==1),2),'+','MarkerSize', 3);
+plot(X(find(y==0),1),X(find(y==0),2),'rx','MarkerSize', 3);
+hold off;
+end
+
+
+
+plotData(X, y);
+
+% Put some labels 
+hold on;
+% Labels and Legend
+xlabel('Exam 1 score')
+ylabel('Exam 2 score')
+
+% Specified in plot order
+legend('Admitted', 'Not admitted')
+hold off;
+
+fprintf('\nProgram paused. Press enter to continue.\n');
+pause;
+
+
+%% ============ Part 2: Compute Cost and Gradient ============
+
+
+[m, n] = size(X);
+
+% Add intercept term to x and X_test
+X = [ones(m, 1) X];
+
+% Initialize fitting parameters
+initial_theta = zeros(n + 1, 1);
+
+
+function [J, grad] = costFunction(theta, X, y)
+m = length(y); % number of training examples
+J = 0;
+grad = zeros(size(theta));
+h=sigmoid(X*theta);
+J=(1/m)*(-y'*log(h)-(1-y)'*log(1-h));
+grad=(1/m)*(X'*(h-y));
+end
+
+
+
+[cost, grad] = costFunction(initial_theta, X, y);
+
+fprintf('Cost at initial theta (zeros): %f\n', cost);
+fprintf('Expected cost (approx): 0.693\n');
+fprintf('Gradient at initial theta (zeros): \n');
+fprintf(' %f \n', grad);
+fprintf('Expected gradients (approx):\n -0.1000\n -12.0092\n -11.2628\n');
+% Compute and display cost and gradient with non-zero theta
+test_theta = [-24; 0.2; 0.2];
+[cost, grad] = costFunction(test_theta, X, y);
+fprintf('\nCost at test theta: %f\n', cost);
+fprintf('Expected cost (approx): 0.218\n');
+fprintf('Gradient at test theta: \n');
+fprintf(' %f \n', grad);
+fprintf('Expected gradients (approx):\n 0.043\n 2.566\n 2.647\n');
+fprintf('\nProgram paused. Press enter to continue.\n');
+pause;
+
+
+%% ============= Part 3: Optimizing using fminunc  =============
+
+[theta, cost] = ...
+	fminunc(@(t)(costFunction(t, X, y)), initial_theta, options);
+
+fprintf('Cost at theta found by fminunc: %f\n', cost);
+fprintf('Expected cost (approx): 0.203\n');
+fprintf('theta: \n');
+fprintf(' %f \n', theta);
+fprintf('Expected theta (approx):\n');
+fprintf(' -25.161\n 0.206\n 0.201\n');
+
+% Plot Boundary
+
+function plotDecisionBoundary(theta, X, y)
+plotData(X(:,2:3), y);
+hold on
+if size(X, 2) <= 3
+    plot_x = [min(X(:,2))-2,  max(X(:,2))+2];
+    plot_y = (-1./theta(3)).*(theta(2).*plot_x + theta(1));
+    plot(plot_x, plot_y)
+    legend('Admitted', 'Not admitted', 'Decision Boundary')
+    axis([30, 100, 30, 100])
+else
+    u = linspace(-1, 1.5, 50);
+    v = linspace(-1, 1.5, 50);
+    z = zeros(length(u), length(v));
+    for i = 1:length(u)
+        for j = 1:length(v)
+            z(i,j) = mapFeature(u(i), v(j))*theta;
+        end
+    end
+    z = z'; % important to transpose z before calling contour
+    contour(u, v, z, [0, 0], 'LineWidth', 2)
+end
+hold off
+
+end
+
+plotDecisionBoundary(theta, X, y);
+
+% Put some labels 
+hold on;
+% Labels and Legend
+xlabel('Exam 1 score')
+ylabel('Exam 2 score')
+
+% Specified in plot order
+legend('Admitted', 'Not admitted')
+hold off;
+
+fprintf('\nProgram paused. Press enter to continue.\n');
+pause;
+
+%% ============== Part 4: Predict and Accuracies ==============
+
+
+prob = sigmoid([1 45 85] * theta);
+fprintf(['For a student with scores 45 and 85, we predict an admission ' ...
+         'probability of %f\n'], prob);
+fprintf('Expected value: 0.775 +/- 0.002\n\n');
+
+function p = predict(theta, X)
+m = size(X, 1); % Number of training examples
+p = zeros(m, 1);
+p=sigmoid(X*theta)>=0.5;
+end
+p = predict(theta, X);
+
+fprintf('Train Accuracy: %f\n', mean(double(p == y)) * 100);
+fprintf('Expected accuracy (approx): 89.0\n');
+fprintf('\n');
